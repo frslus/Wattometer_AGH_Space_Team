@@ -2,7 +2,7 @@
 v1.0
 ------------
 Create a basic funcional chart (class) basing on PyCharm module. Chart takes a data from user and plot it in time domain. It dynamically changes Y-axe to fit to the data range. most important instructions:
-- Chart.__init__ - to initialize the object you have to add parameters:
+- Chart.__init__() - to initialize the object you have to add parameters:
 	- pos: (int, int) - position of left-top corner of the plot
 	- axis: (int, int) - lengths of axis X and Y.
 	- title: str - plot's title,

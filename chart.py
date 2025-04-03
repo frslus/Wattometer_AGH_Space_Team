@@ -1,8 +1,5 @@
-import random
-
 import pygame as pg
 import datetime
-import serial
 import math
 
 
@@ -70,13 +67,13 @@ class Chart:
         return pos_x, pos_y
 
     def draw(self):
-        self.update_axis_span()
         for line in self.grid_x:
             pg.draw.line(self.screen, self.GRID_COLOR, (line[0], line[1]), (line[2], line[3]), self.GRID_WIDTH)
         for line in self.grid_y:
             pg.draw.line(self.screen, self.GRID_COLOR, (line[0], line[1]), (line[2], line[3]), self.GRID_WIDTH)
         for it in range(1, len(self.data)):
-            pg.draw.line(self.screen, self.CHART_COLOR, self.datapoint_pos(it - 1), self.datapoint_pos(it), self.CHART_WIDTH)
+            pg.draw.line(self.screen, self.CHART_COLOR, self.datapoint_pos(it - 1), self.datapoint_pos(it),
+                         self.CHART_WIDTH)
         pg.draw.rect(self.screen, self.AXIS_COLOR, self.axe_x)
         pg.draw.rect(self.screen, self.AXIS_COLOR, self.axe_y)
         pg.draw.rect(self.screen, self.AXIS_COLOR, self.joint)
@@ -85,12 +82,13 @@ class Chart:
         for label in self.labels_x:
             text = self.font_small.render(f"{label:.2f}", True, "white")
             text_block = text.get_rect()
-            text_block.center = (self.pos[0] + self.axis[0] * label * 1000000 / self.timespan, self.pos[1] + self.axis[1] + 15)
+            text_block.center = (
+            self.pos[0] + self.axis[0] * label * 1000000 / self.timespan, self.pos[1] + self.axis[1] + 15)
             self.screen.blit(text, text_block)
         for label in self.labels_y:
             text = self.font_small.render(f"{label:.2f}", True, "white")
             text_block = text.get_rect()
-            text_block.center = (self.pos[0] - 20,
+            text_block.center = (self.pos[0] - 25,
                                  self.pos[1] + self.axis[1] - self.axis[1] * (label - self.value_span[0]) /
                                  (self.value_span[1] - self.value_span[0]))
             self.screen.blit(text, text_block)
@@ -101,44 +99,9 @@ class Chart:
 
     def feed(self, data):
         self.data.append((self.microtime(datetime.datetime.today()), data))
-        if self.max_data is None or self.max_data < data:
-            self.max_data = data
-        if self.min_data is None or self.min_data > data:
-            self.min_data = data
+        self.update_axis_span()
 
     def update_axis_span(self):
-        if self.min_data != self.max_data:
-            delta = self.max_data - self.min_data
-            self.value_span = (self.min_data - 0.1 * delta, self.max_data + 0.1 * delta)
-            cell = int(math.log(self.value_span[1] - self.value_span[0], 10)) + 1
-            grid_span = int(10 ** cell)
-            grid_lines = (self.value_span[1] - self.value_span[0]) // grid_span
-            while grid_lines < 3:
-                grid_span /= 2
-                grid_lines = (self.value_span[1] - self.value_span[0]) // grid_span
-                if grid_lines >= 3:
-                    break
-                grid_span /= 2
-                grid_lines = (self.value_span[1] - self.value_span[0]) // grid_span
-                if grid_lines >= 3:
-                    break
-                grid_span /= 5
-                grid_lines = (self.value_span[1] - self.value_span[0]) // grid_span
-            grid_pos = 0
-            self.grid_y = []
-            self.labels_y = []
-            while grid_pos > self.value_span[0]:
-                grid_pos -= grid_span
-            while grid_pos < self.value_span[1]:
-                if self.value_span[0] < grid_pos:
-                    self.grid_y.append((self.pos[0],
-                                        self.pos[1] + self.axis[1] - self.axis[1] * (grid_pos - self.value_span[0]) /
-                                        (self.value_span[1] - self.value_span[0]),
-                                        self.pos[0] + self.axis[0],
-                                        self.pos[1] + self.axis[1] - self.axis[1] * (grid_pos - self.value_span[0]) /
-                                        (self.value_span[1] - self.value_span[0])))
-                    self.labels_y.append(grid_pos)
-                grid_pos += grid_span
         if len(self.data) > 0:
             if self.data[-1][0] - self.start_time > self.timespan:
                 self.start_time = self.data[-1][0] - self.timespan
@@ -148,3 +111,47 @@ class Chart:
             self.data = self.data[i:]
             self.min_data = min([self.data[i][1] for i in range(len(self.data))])
             self.max_data = max([self.data[i][1] for i in range(len(self.data))])
+        if self.min_data != self.max_data:
+            delta = self.max_data - self.min_data
+            self.value_span = (self.min_data - 0.1 * delta, self.max_data + 0.1 * delta)
+        else:
+            if self.min_data is None:
+                self.value_span = (-1, 1)
+            else:
+                self.value_span = (self.min_data - 1, self.min_data + 1)
+        cell = int(math.log(self.value_span[1] - self.value_span[0], 10)) + 1
+        grid_span = int(10 ** cell)
+        grid_lines = (self.value_span[1] - self.value_span[0]) // grid_span
+        while grid_lines < 3:
+            grid_span /= 2
+            grid_lines = (self.value_span[1] - self.value_span[0]) // grid_span
+            if grid_lines >= 3:
+                break
+            grid_span /= 2
+            grid_lines = (self.value_span[1] - self.value_span[0]) // grid_span
+            if grid_lines >= 3:
+                break
+            grid_span /= 5
+            grid_lines = (self.value_span[1] - self.value_span[0]) // grid_span
+        grid_pos = 0
+        self.grid_y = []
+        self.labels_y = []
+        while grid_pos > self.value_span[0]:
+            grid_pos -= grid_span
+        while grid_pos < self.value_span[1]:
+            if self.value_span[0] < grid_pos:
+                self.grid_y.append((self.pos[0],
+                                    self.pos[1] + self.axis[1] - self.axis[1] * (grid_pos - self.value_span[0]) /
+                                    (self.value_span[1] - self.value_span[0]),
+                                    self.pos[0] + self.axis[0],
+                                    self.pos[1] + self.axis[1] - self.axis[1] * (grid_pos - self.value_span[0]) /
+                                    (self.value_span[1] - self.value_span[0])))
+                self.labels_y.append(grid_pos)
+            grid_pos += grid_span
+
+    def reset(self):
+        self.data = []
+        self.min_data = None
+        self.max_data = None
+        self.start_time = self.microtime(datetime.datetime.today())
+        self.update_axis_span()
