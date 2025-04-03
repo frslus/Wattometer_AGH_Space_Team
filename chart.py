@@ -46,7 +46,10 @@ class Chart:
         self.max_data = None
         self.labels_x = [0, (self.timespan / 3) / 1000000, 2 * (self.timespan / 3) / 1000000, self.timespan / 1000000]
         self.labels_y = []
+        self.x_unit = None
+        self.y_unit = None
         self.font_small = pg.font.Font(None, 20)
+        self.font_medium = pg.font.Font(None, 25)
         self.font_large = pg.font.Font(None, 30)
         self.title = title
 
@@ -96,6 +99,16 @@ class Chart:
         text_block = text.get_rect()
         text_block.center = (self.pos[0] + self.axis[0] // 2, self.pos[1] - 15)
         self.screen.blit(text, text_block)
+        if self.x_unit is not None:
+            text = self.font_medium.render(self.x_unit, True, "white")
+            text_block = text.get_rect()
+            text_block.center = (self.pos[0] + self.axis[0] + 25 + len(self.x_unit), self.pos[1] + self.axis[1])
+            self.screen.blit(text, text_block)
+        if self.y_unit is not None:
+            text = self.font_medium.render(self.y_unit, True, "white")
+            text_block = text.get_rect()
+            text_block.center = (self.pos[0], self.pos[1] - 25)
+            self.screen.blit(text, text_block)
 
     def feed(self, data):
         self.data.append((self.microtime(datetime.datetime.today()), data))
